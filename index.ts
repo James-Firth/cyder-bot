@@ -70,22 +70,25 @@ client.on(Constants.Events.VOICE_STATE_UPDATE, async (oldState: VoiceState, newS
 
     // If no one is in the voice channel we're done!
     if (!currentVoiceChannel) {
-        signale.complete(`Everyone has left voice channel: ${oldVoiceChannel?.name}`);
-        if (logChannel) {
-            await logChannel.send(`Everyone has left voice channel: ${oldVoiceChannel?.name}`)
-        }
-        const colonPosition = oldVoiceChannel?.name.indexOf(':');
-        if (colonPosition >= 0) {
-            const newChannelName = `${oldVoiceChannel?.name.substring(0, colonPosition)}: TBD`;
-            signale.info(`New Channel name is: ${newChannelName}`);
-
-            try {
-                const vc = (await oldVoiceChannel.fetch(true)) as VoiceChannel;
-                signale.log('Renaming channel...');
-                const vcPostUpdate = await vc.setName(newChannelName);
-                signale.success(`New name set: ${vcPostUpdate?.name}`);
-            } catch (e) {
-                signale.error('error', e);
+        if (oldVoiceChannel && oldVoiceChannel.members.size == 0) {
+            // TODO: This incorrectly triggered when the streamer left and 2 others were still in the call.
+            signale.complete(`Everyone has left voice channel: ${oldVoiceChannel?.name}`);
+            if (logChannel) {
+                await logChannel.send(`Everyone has left voice channel: ${oldVoiceChannel?.name}`)
+            }
+            const colonPosition = oldVoiceChannel?.name.indexOf(':');
+            if (colonPosition >= 0) {
+                const newChannelName = `${oldVoiceChannel?.name.substring(0, colonPosition)}: TBD`;
+                signale.info(`New Channel name is: ${newChannelName}`);
+    
+                try {
+                    const vc = (await oldVoiceChannel.fetch(true)) as VoiceChannel;
+                    signale.log('Renaming channel...');
+                    const vcPostUpdate = await vc.setName(newChannelName);
+                    signale.success(`New name set: ${vcPostUpdate?.name}`);
+                } catch (e) {
+                    signale.error('error', e);
+                }
             }
         }
         return;
@@ -102,7 +105,7 @@ client.on(Constants.Events.VOICE_STATE_UPDATE, async (oldState: VoiceState, newS
                 activity.id !== 'custom' &&
                 activity.name.trim().length > 0
         );
-        signale.note(currentActivities);
+        signale.note('Current activities for ', member.nickname || member.displayName, ': ',currentActivities);
 
         // Put all relevant activity names in a Set
         if (Array.isArray(currentActivities)) {
